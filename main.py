@@ -119,3 +119,74 @@ if all_results:
     plt.show()
 
     res_df.to_excel("DILAN_SPEECH_FINAL_REPORT.xlsx", index=False)
+
+import gradio as gr
+
+def live_classification_interface(audio_file):
+    """
+    Demo sırasında yüklenen veya kaydedilen sesi analiz eder.
+    """
+    if audio_file is None:
+        return "Lütfen bir ses dosyası yükleyin veya kaydedin."
+    
+    # 1. Sesi yükle
+    y, sr = librosa.load(audio_file, sr=None)
+    
+    # 2. Senin yazdığın Otokorelasyon fonksiyonunu kullanarak F0 hesapla
+    f0 = compute_autocorr_f0(y, sr)
+    
+    # 3. Kural Tabanlı Karar Mekanizman (Yönergedeki eşik değerlerin)
+    if f0 < 165:
+        prediction = "ERKEK (Male) 👨"
+        color = "Mavi"
+    elif f0 < 255:
+        prediction = "KADIN (Female) 👩"
+        color = "Pembe"
+    else:
+        prediction = "ÇOCUK (Child) 🧒"
+        color = "Yeşil"
+        
+    return f"Hesaplanan Temel Frekans (F0): {f0:.2f} Hz\nTahmin Edilen Sınıf: {prediction}"
+
+import gradio as gr
+
+# --- DEMO ARAYÜZÜ FONKSİYONU ---
+def demo_analiz(ses_yolu):
+    if ses_yolu is None:
+        return "Lütfen bir ses yükleyin veya mikrofona konuşun."
+    
+    # 1. Sesi yükle (Kendi kütüphanelerini kullanır)
+    y, sr = librosa.load(ses_yolu, sr=None)
+    
+    # 2. Senin yazdığın F0 hesaplama fonksiyonunu çağırıyoruz
+    f0 = compute_autocorr_f0(y, sr)
+    
+    # 3. Kural tabanlı sınıflandırma (Slaytında anlatacağın mantık)
+    if f0 < 165:
+        tahmin = "ERKEK (Male) 👨"
+    elif f0 < 255:
+        tahmin = "KADIN (Female) 👩"
+    else:
+        tahmin = "ÇOCUK (Child) 🧒"
+        
+    return f"Analiz Sonucu:\nHesaplanan F0: {f0:.2f} Hz\nTahmin: {tahmin}"
+
+# --- ARAYÜZ TASARIMI ---
+with gr.Blocks(title="COE216 Ses Analizi Demosu") as demo:
+    gr.Markdown("# 🎙️ Ses Analizi ile Cinsiyet Sınıflandırma")
+    gr.Markdown("Bu arayüz, Otokorelasyon (Autocorrelation) yöntemiyle F0 değerini hesaplar.")
+    
+    with gr.Row():
+        ses_girisi = gr.Audio(type="filepath", label="Ses Kaydet veya Dosya Yükle")
+        sonuc_alani = gr.Textbox(label="Sınıflandırma Sonucu", interactive=False)
+    
+    btn = gr.Button("Analiz Et", variant="primary")
+    btn.click(fn=demo_analiz, inputs=ses_girisi, outputs=sonuc_alani)
+
+# --- ARAYÜZÜ BAŞLAT ---
+if __name__ == "__main__":
+    print("\n" + "="*30)
+    print("DEMO BAŞLATILIYOR...")
+    print("Aşağıdaki linke tıkla veya tarayıcına yapıştır:")
+    print("="*30)
+    demo.launch(inbrowser=True) # Bu komut tarayıcıyı otomatik açar
